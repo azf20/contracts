@@ -219,6 +219,24 @@ describe('OVM_ERC721Gateway', () => {
       // expect the gateway to be the new owner of the token
       const newTokenOwner = await ERC721.ownerOf(depositTokenId)
       expect(newTokenOwner).to.equal(OVM_ERC721Gateway.address)
+
+      const depositCallToMessenger =
+        Mock__OVM_L1CrossDomainMessenger.smocked.sendMessage.calls[0]
+
+      // Message should be sent to the L2ERC20Gateway on L2
+      expect(depositCallToMessenger._target).to.equal(
+        Mock__OVM_DepositedERC721.address
+      )
+      // Message data should be a call telling the L2ERC20Gateway to finalize the deposit
+
+      // the L1 gateway sends the correct message to the L1 messenger, including TokenURI
+      expect(depositCallToMessenger._message).to.equal(
+        await Mock__OVM_DepositedERC721.interface.encodeFunctionData(
+          'finalizeDeposit',
+          [initialTokenOwner, depositTokenId, TEST_TOKEN_URI]
+        )
+      )
+      expect(depositCallToMessenger._gasLimit).to.equal(finalizeDepositGasLimit)
     })
   })
 })
